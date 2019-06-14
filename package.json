@@ -1,0 +1,16 @@
+{
+  "name": "toaster",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "bot": "node ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^11.5.1",
+    "firebase-admin": "^8.1.0"
+  }
+}
