@@ -17,12 +17,12 @@ const error = new discord.RichEmbed()
     .setThumbnail("https://cdn.discordapp.com/attachments/478645567786844171/589264179739754516/dumpsterfire.gif")
 
 
-bot.on('ready', function () {
+bot.on('ready', () => {
     console.info("🍞 Super hyper toasting abilities activated!")
     bot.user.setActivity('sizzling toast.', { type: 'LISTENING' })
 })
 
-bot.on('message', function (message) {
+bot.on('message', (message) => {
     if (message.author.bot) return
     if (!message.content.startsWith(prefix)) {
         db.collection('users').doc(message.author.id).update({
@@ -36,7 +36,6 @@ bot.on('message', function (message) {
                 let messages = parseInt(data.messages)
                 let level = parseInt(data.level)
 
-                console.log(`${Math.pow(2, level + 1)} needed, have ${messages}`)
                 if (messages === Math.pow(2, level + 1)) {
                     let coins = 25 * level
                     db.collection('users').doc(message.author.id).update({
@@ -99,7 +98,7 @@ bot.on('message', function (message) {
             let embed = new discord.RichEmbed()
             .setColor("#f44242")
             .setDescription(`📊 ${message.author}'s current level.`)
-            .addField(`Level ${level + 1}`, `${Math.pow(2, level + 2) - messages} messages needed to\nreach level ${level + 2}`)
+            .addField(`Level ${level}`, `${Math.pow(2, level + 1) - messages} messages needed to\nreach level ${level + 1}`)
             .setThumbnail(message.author.avatarURL)
             message.channel.send(embed)
         })
@@ -107,6 +106,55 @@ bot.on('message', function (message) {
             console.log(e)
             //message.channel.send(error)
         })
+    }
+    else if (~['ranks', 'rankings'].indexOf(command)) {
+        message.channel.startTyping()
+        let embed = new discord.RichEmbed().setColor('#ff8738').setTitle('📚 The Rankings.').setImage('https://media.giphy.com/media/U6pavBhRsbNbPzrwWg/giphy-downsized.gif')
+        db.collection('users').orderBy('messages', 'desc').limit(6).get()
+        .then(snapshot => {
+            snapshot.forEach(doc => {
+                let data = doc.data()
+                embed.addField(`👑 ${bot.guilds.get('285623631042707457').members.get(doc.id).displayName} (Level ${data.level})`, 
+                    `${data.messages.toLocaleString()} messages - ${data.coins.toLocaleString()} coins`, true)
+            })
+            message.channel.send(embed)
+        })
+        .catch(() => {
+            message.channel.send(error)
+        })
+    }
+    else if (~['dashboard', 'shop'].indexOf(command)) {
+        message.channel.startTyping()
+    }
+    else if (~['help', 'commands'].indexOf(command)) {
+
+    }
+    else if (~['report'].indexOf(command)) {
+        message.channel.startTyping()
+        if (args.length < 2) {
+            let embed = new discord.RichEmbed()
+            .setColor("#f44242")
+            .setTitle('🚨 Can\'t submit your report!')
+            .setDescription("Make sure you fill out everything.\n`~report <mention user> <describe behavior>`")
+            .setThumbnail('https://media.giphy.com/media/RYjnzPS8u0jAs/giphy.gif')
+            message.channel.send(embed)
+        }
+        else {
+            const matches = args[0].match(/^<@!?(\d+)>$/);
+            if (matches != undefined) {
+                const id = matches[1];
+                console.log(id)
+            }
+            else {
+                let embed = new discord.RichEmbed()
+                .setColor("#f44242")
+                .setTitle('🚨 Invalid user mention!')
+                .setDescription("Make sure the command is in the format:\n`~report <mention user> <describe behavior>`")
+                .setThumbnail('https://media.giphy.com/media/xhN4C2vEuapCo/giphy-tumblr.gif')
+                message.channel.send(embed)
+            }
+            
+        }
     }
     message.channel.stopTyping()
 })
@@ -118,34 +166,66 @@ bot.on('guildMemberAdd', member => {
         'messages': 1
     }
     db.collection('users').doc(member.id).set(data)
+
+    joinmessages = [
+        "{member} just joined. Everyone, look busy!",
+        "{member} just joined. Can I get a heal?",
+        "{member} just joined. You must construct additional pylons.",
+        "Welcome, {member}. We were expecting you ( ͡° ͜ʖ ͡°).",
+        "Ermagherd, {member} is here.",
+        "A wild {member} appeared.",
+        "Swooooosh. {member} just landed.",
+        "Where's {member}? In the server!",
+        "{member} just showed up. Hold my beer!",
+        "It's {member}! Praise the sun!. \\[T]/",
+        "Never gonna give {member} up, never gonna let {member} down!",
+        "Ha! {member} has joined. You activated my trap card!",
+        "It's dangerous to go alone, take {member}!",
+        "Hello, is it {member} you're looking for?",
+    ]
+
+    let embed = new discord.RichEmbed()
+    .setColor('#6dff94')
+    .setAuthor('Hey there, ' + m.displayName + "!", m.user.avatarURL)
+    .setDescription(joinmessages[Math.floor(Math.random() * joinmessages.length)].replace("{member}", m.displayName))
+    .setTimestamp()
+    bot.guilds.get('285623631042707457').channels.get("528733373200334878").send(embed)
 })
 
 bot.on('guildMemberRemove', member => {
     db.collection('users').doc(member.id).delete()
+    let embed = new Discord.RichEmbed()
+    .setColor('#ff4635')
+    .setAuthor('Welp, ' + m.displayName + " just left the server.", m.user.avatarURL)
+    .setTimestamp()
+    bot.guilds.get('285623631042707457').channels.get("583478484656062465").send(embed)
 })
 
-// Stream notifier
+// Repeated task
 setTimeout(() => {
-    const options = {
-        method: 'GET',
-        uri: 'https://api.twitch.tv/helix/streams?user_login=NestedVariables',
-        headers: {
-            'Client-ID': 'jv2au2y9ktr33i5a2orq6p6kthxdpo'
+    try {
+        const options = {
+            method: 'GET',
+            uri: 'https://api.twitch.tv/helix/streams?user_login=NestedVariables',
+            headers: {
+                'Client-ID': 'jv2au2y9ktr33i5a2orq6p6kthxdpo'
+            }
         }
+        request.get(options, (error, res, body) => {
+            let data = JSON.parse(body)
+            if (data['data'].length == 0) {
+                bot.user.setActivity('sizzling toast.', { type: 'LISTENING' })
+            }
+            else {
+                console.log("Streaming.")
+                bot.user.setActivity(data['data'][0]['title'], { 
+                    type: 'STREAMING',
+                    url: "https://www.twitch.tv/NestedVariables"
+                })
+            }
+        })
     }
-    request.get(options, (error, res, body) => {
-        let data = JSON.parse(body)
-        if (data['data'].length == 0) {
-            bot.user.setActivity('sizzling toast.', { type: 'LISTENING' })
-        }
-        else {
-            console.log("Streaming.")
-            bot.user.setActivity(data['data'][0]['title'], { 
-                type: 'STREAMING',
-                url: "https://www.twitch.tv/NestedVariables"
-            })
-        }
-    })
-}, 60000);
+    catch (e) {}
+}, 120000);
 
 bot.login(credentials.token)
