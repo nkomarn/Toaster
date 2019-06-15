@@ -4,13 +4,15 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "bot": "node ."
+    "bot": "node .",
+    "compile": "tsc index.ts --lib es2018 && node ."
   },
   "keywords": [],
   "author": "",
   "license": "MIT",
   "dependencies": {
     "discord.js": "^11.5.1",
-    "firebase-admin": "^8.1.0"
+    "firebase-admin": "^8.1.0",
+    "request": "^2.88.0"
   }
 }
