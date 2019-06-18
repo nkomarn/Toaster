@@ -20,6 +20,8 @@ const error = new discord.RichEmbed()
     .addField(`An internal error occured :/`, `Let <@237768953739476993> know!`, true)
     .setThumbnail("https://cdn.discordapp.com/attachments/478645567786844171/589264179739754516/dumpsterfire.gif")
 
+const messagedRecently = new Set();
+let messageLog = []
 
 bot.on('ready', () => {
     console.info("🍞 Super hyper toasting abilities activated!")
@@ -28,7 +30,36 @@ bot.on('ready', () => {
 
 bot.on('message', (message) => {
     if (message.author.bot) return
-    if (!message.content.startsWith(prefix)) {
+
+    messageLog.push(message.member.id)
+
+    if (messageLog.filter(item => item == message.member.id).length > 5) {
+        message.member.addRole('589990848385777694')
+        let embed = new discord.RichEmbed()
+        .setColor("#f44242")
+        .setTitle("📣 You've been muted.")
+        .setDescription("Please don't spam.\nIt hurts my feelings.\nI'll unmute after 1 minute.")
+        .setThumbnail("https://media.giphy.com/media/TU76e2JHkPchG/giphy-downsized.gif")
+
+        let info = new discord.RichEmbed()
+        .setColor("#f44242")
+        .setTitle(`📣 Muted ${message.member.displayName}.`)
+        .setTimestamp()
+        message.guild.channels.get('583478484656062465').send(info)
+
+        message.author.send(embed)
+        setTimeout(() => {
+            messageLog = []
+            message.member.removeRole('589990848385777694')
+        }, 60000);
+    }
+
+    if (!message.content.startsWith(prefix) && !messagedRecently.has(message.author.id)) {
+        messagedRecently.add(message.author.id)
+        setTimeout(() => {
+            messagedRecently.delete(message.author.id);
+        }, 30000);
+        
         db.collection('users').doc(message.author.id).update({
             messages: firestore.FieldValue.increment(1),
             coins: firestore.FieldValue.increment(Math.floor(Math.random() * 35)),
