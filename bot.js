@@ -1,7 +1,3 @@
-const server = require('express')()
-const http = require('http').Server(server)
-const io = require('socket.io')(http)
-
 const credentials = require('./credentials')
 const admin = require('firebase-admin')
 const firestore = require('@google-cloud/firestore')
@@ -183,97 +179,6 @@ bot.on('message', (message) => {
             
         }
     }
-    else if (~['link'].indexOf(command)) {
-        message.channel.startTyping()
-        if (args.length < 1 || args[0] == '' || args[0].length < 3) {
-            let embed = new discord.RichEmbed()
-            .setColor("#f48f42")
-            .setTitle("🔥 Whoops.")
-            .setDescription('Provide a Minecraft account to link to.\nUse `~link <Minecraft account>`.')
-            .setThumbnail("https://media.giphy.com/media/l2QEgWxqxI2WJCXpC/giphy-downsized.gif")
-            message.channel.send(embed)
-            message.channel.stopTyping()
-            return
-        }
-        
-        db.collection('users').doc(message.member.id).get()
-        .then(doc => {
-            let data = doc.data()
-
-            if (data.minecraft == undefined || data.minecraft == "") {
-                db.collection('users').doc(message.member.id).set({
-                    minecraft: args[0].toLowerCase()
-                }, {merge: true})
-    
-                let embed = new discord.RichEmbed()
-                .setColor("#f48f42")
-                .setTitle("✨ Linked!")
-                .setDescription('Linked your account with the\nMinecraft account `' + args[0] + '`.\n Unlink with `~unlink`.')
-                .setThumbnail(`https://minotar.net/avatar/${args[0]}`)
-                message.channel.send(embed)
-                message.channel.stopTyping()
-            }
-            else {
-                let embed = new discord.RichEmbed()
-                .setColor("#f48f42")
-                .setTitle("✨ Already linked.")
-                .setDescription('Your account is already linked\nwith the Minecraft account `' + data.minecraft + '`.\n Unlink with `~unlink`.')
-                .setThumbnail(`https://minotar.net/avatar/${args[0]}`)
-                message.channel.send(embed)
-                message.channel.stopTyping()
-            }
-        })
-        .catch(e => {
-            message.channel.send(error)
-            message.channel.stopTyping()
-        })
-    }
-    else if (~['unlink'].indexOf(command)) {
-        message.channel.startTyping()        
-        db.collection('users').doc(message.member.id).get()
-        .then(doc => {
-            let data = doc.data()
-
-            if (data.minecraft == undefined || data.minecraft == "") {
-                let embed = new discord.RichEmbed()
-                .setColor("#f48f42")
-                .setTitle("🤔 You're not linked.")
-                .setDescription('You can link using the command\n`~link <Minecraft account>`.')
-                .setThumbnail(`https://media.giphy.com/media/8lQyyys3SGBoUUxrUp/giphy.gif`)
-                message.channel.send(embed)
-                message.channel.stopTyping()
-            }
-            else {
-                let embed = new discord.RichEmbed()
-                .setColor("#f48f42")
-                .setTitle("🔗 Unlinked.")
-                .setDescription('Unlinked your account from\nthe Minecraft account `' + data.minecraft + '`.\n Relink with `~link <Minecraft account>`.')
-                .setThumbnail('https://media.giphy.com/media/3oKIPwoeGErMmaI43S/giphy-downsized.gif')
-                message.channel.send(embed)
-                db.collection('users').doc(message.member.id).set({
-                    minecraft: ''
-                }, {merge: true})
-                message.channel.stopTyping()
-            }
-        })
-        .catch(e => {
-            message.channel.send(error)
-            message.channel.stopTyping()
-        })
-    }
-    else if (~['quote'].indexOf(command)) {
-        if (!message.member.hasPermission('ADMINISTRATOR')) return;
-        message.channel.startTyping()
-        message.delete()
-
-        let quote = args.join(" ")
-        let embed = new discord.RichEmbed()
-        .setColor("#ab51ff")
-        .setTitle(`✨ "${quote}"`)
-        .setTimestamp()
-        message.channel.send(embed)
-        message.channel.stopTyping()
-    }
     message.channel.stopTyping()
 })
 
@@ -346,49 +251,6 @@ bot.on('guildMemberRemove', member => {
     catch (e) {}
 }, 120000);*/
 
-
-
-
-
-
-
-
-
-server.get('/', (req, res) => {
-    res.send("home")
-})
-
-server.get('/auth', (req, res) => {
-    let code = req.query.code
-    if (code === undefined) res.status(400).send("No code specified.")
-    
-    let data = {
-        'client_id': '438067945126494229',
-        'client_secret': credentials.secret,
-        'grant_type': 'authorization_code',
-        'code': code,
-        'redirect_uri': 'https://toaster.nkomarn.xyz/auth',
-        'scope': 'identify guilds guilds.join'
-    }
-    let options = {
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        url: 'https://discordapp.com/api/oauth2/token',
-        form: data,
-        method: 'POST'
-    }
-    request.post(options, (error, response, body) => {
-        if (!error && response.statusCode === 200) {
-            let json = JSON.parse(body)
-            console.log(json)
-            res.status(200).cookie('token', json['access_token'])
-        }
-        else res.status(400)
-    })
-})
-
-
-
-//server.listen(8080)
-bot.login(credentials.token)
+function runBot() {
+    bot.login(credentials.token)
+}
